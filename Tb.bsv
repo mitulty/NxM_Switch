@@ -8,10 +8,11 @@ import GetPut :: *;
 
 (* synthesize *)
 module mkTb(Empty);
-   // Switch_ifc#(Bit#(Packet_Length_Max),N,M) dut_SwitchNxM  <- mkSwitch;
-    Switch_ifc#(Bit#(Packet_Length_Max),N,M) dut_SwitchNxM  <- mkSwitchWrapper;
+   // Switch_ifc#(Bit#(Packet_Length_Max),N,M) dut_SwitchNxM  <- mkSwitch; // It is not synthesizable.
+    Switch_ifc#(Bit#(Packet_Length_Max),N,M) dut_SwitchNxM  <- mkSwitchWrapper; // This is synthesizable.
 
-    // This function just send the packet to only two output ports { 0 and 1 } for all the input ports.  
+    // This function just sends the packet to only two output ports { 0 and 1 } from all the input ports.
+    // A better function can be used to generate packets for when M > 2.   
     function Bit#(Packet_Length_Max) packet_form( Integer i);   
         if(i % 2 == 0)    
             return (fromInteger(8388608+ i/2));
@@ -20,8 +21,8 @@ module mkTb(Empty);
     endfunction: packet_form
     
     function  Int#(8) destCheck(t) provisos(Bits#(t,size_t),Eq#(t));
-        Int#(8) x = unpack(pack(t)[31:24]); // Here t is represents a general data type. Using t[31:24] directly will make it a Bit#(n) type.
-        // Use of pack and unpack data type conversion vections will do the work.
+        Int#(8) x = unpack(pack(t)[31:24]); // Here t represents a general data type. Using t[31:24] directly will make it a Bit#(n) type.
+        // Use of pack and unpack data type conversion functions will do the work.
         return x;
         endfunction: destCheck
     
@@ -41,8 +42,8 @@ module mkTb(Empty);
             dut_SwitchNxM.input_ports[i].put(packets_in[i][index[i]]);
             index[i] <= index[i] + 1;
             $display("$1 -> For input port = %0d: index[%0d] = %0d , packet sent= %0d, to address = %0d",i,i,index[i],packets_in[i][index[i]],addr);
-            //no_of_packets_sent_to[addr] <= no_of_packets_sent_to[addr] + 1; // This will cause conflicts as they work on addr and not on i. Hence for 
-                                                                              // for each rule there may be multiple pairs writing to same output port.           
+            //no_of_packets_sent_to[addr] <= no_of_packets_sent_to[addr] + 1; // This will cause conflicts as it works on addr and not on i.
+                                                                              //Hence there may be multiple rules writing to the same output port.           
         endrule: send_packets
     end
 

@@ -11,7 +11,7 @@ module mkSwitch(Switch_ifc#(t,n,m)) provisos(Eq#(t),Bits#(t,size_t));
 
     function  Int#(8) destCheck(t packet) provisos(Bits#(t,size_t),Eq#(t));
         Int#(8) x = unpack(pack(packet)[31:24]); // Here t is represents a general data type. Using t[31:24] directly will make it a Bit#(n) type.
-                                            // Use of pack and unpack data type conversion vections will do the work.
+                                            // Use of pack and unpack data type conversion functions will do the work.
         return x;
     endfunction: destCheck
 
@@ -84,6 +84,8 @@ module mkSwitch(Switch_ifc#(t,n,m)) provisos(Eq#(t),Bits#(t,size_t));
     //         $display("----------------------------------------------");
     //     endrule: input_fifo_content
     // end
+
+// These rules will schedule the internal fifos for taking out the packets using Round-Robin Policy.
     for(Integer j = 0 ; j < valueOf(m); j=j+1) begin
         rule round_robin_select;
             if(internal_fifofs[j][select_if[j]].notEmpty()) begin
@@ -101,7 +103,6 @@ module mkSwitch(Switch_ifc#(t,n,m)) provisos(Eq#(t),Bits#(t,size_t));
     for(Integer j = 0 ; j < valueOf(m); j=j+1) begin
             oports[j] =  interface Get#(t)
                                 method ActionValue#(t) get();
-                                    // This method will schedule the fifos for taking out the packets {LRU, Round-Robin}.
                                     let packet_out = internal_fifofs[j][select_if[j]].first(); // implicit condition
                                     internal_fifofs[j][select_if[j]].deq();
                                     return packet_out;
